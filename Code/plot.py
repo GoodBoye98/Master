@@ -34,7 +34,7 @@ class solFamily:
             sol.C_1 = self.C_1
             sol.name = self.name
             if 'G' in dir:
-                val = float(dir[2:]) if dir[0] == 'G' else 10
+                val = float(dir[2:]) if 'W' not in dir else 10
                 sol.S = lambda x : 4 / (n.sqrt(n.pi * val)) * n.exp(- x * x / val)
             else:
                 sol.S = lambda x : n.exp(-n.abs(x) / 2)
@@ -68,10 +68,10 @@ class solFamily:
         else:
             points = points[n.argsort(points[:, 1])]
         if self.name == 'Partial ice':
-            if self.dir == "WE":
+            if self.dir == "E W":
                 up = -0.5
                 low = -0.52
-            elif self.dir == "WG":
+            elif self.dir == "G W":
                 up = -0.4
                 low = -0.42
             idx = n.argwhere(points[:, 1] > low)
@@ -226,13 +226,9 @@ class solution:
         return delta_epsilon
 
 
-
-
-
-
 def main():
-    sol_name = 'G 5.0'
-    if sol_name[0] == 'W':
+    sol_name = 'G W'
+    if 'W' in sol_name:
         cnt = [0, 0]
         s_function = r"$e^{-\frac{|x|}{2}}$" if sol_name[1] == 'E' else r"$\frac{4}{\sqrt{10 \pi}}e^{-\frac{x^2}{10}}$"
     elif sol_name[0] == 'G':
