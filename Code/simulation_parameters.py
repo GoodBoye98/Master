@@ -39,6 +39,8 @@ for line in lines:
         init_vals["N"] = line[1]
     elif line[0] == "s":
         init_vals["s"] = line[1]
+    elif line[0] == "time":
+        init_vals["time"] = line[1]
 
 
 good = "✔"

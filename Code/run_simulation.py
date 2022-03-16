@@ -10,6 +10,7 @@ import pandas as pd
 import subprocess
 import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
+import scipy.integrate as integrate
 from matplotlib.widgets import Slider, Button
 from matplotlib.pyplot import figure
 from os import listdir, remove, mkdir, rmdir
@@ -130,8 +131,8 @@ delete = True
 
 
 lss = {'spectral': '-.',
-       'finitediff': '--',
-       'midpoint': '-.',
+       'finitediff': ':',
+       'midpoint': '--',
        'analytic': '-'}
 lws = {'spectral': 1.75,
        'finitediff': 1.75,
@@ -139,7 +140,7 @@ lws = {'spectral': 1.75,
        'analytic': 1.75}
 cs = {'spectral': 'Orange',
       'finitediff': 'Blue',
-      'midpoint': 'Orange',
+      'midpoint': 'Green',
       'analytic': 'Black'}
 labels = {'spectral': 'Spectral',
           'finitediff': 'Finite difference',
@@ -163,6 +164,20 @@ def Source_3(x, t):
 
 def Source_4(x, t):
     return n.cos(x + t)
+
+def gauss(x, s):
+    return 1 / (s * n.sqrt(n.pi)) * n.exp(- (x / s) ** 2)
+
+def convolutionWeights(dx):
+    num = int(n.ceil(5 * s / dx))
+    x = n.linspace(-dx * num, dx * num, 2 * num + 1)
+    weights = []
+    for i in range(x.shape[0]):
+        weights.append(integrate.quad(lambda x: gauss(x, s), x[i] - 1/2*dx, x[i] + 1/2*dx)[0])
+    weights = n.array(weights)
+    weights /= n.sum(weights)
+    return weights
+
 
 ############ CONFIGURATION CLASS ############
 
@@ -201,6 +216,7 @@ class Config:
 
         self.T = n.zeros(N)
         self.S = n.zeros(N)
+        self.F = n.zeros(N)  # N will be changed for this!
 
         # Need to be defined
         self.name = None
@@ -236,6 +252,7 @@ class Config:
             f.write(f"savePoints {self.nSavePoints}\n")
             f.write('T(x) ' + ' '.join([f'{num:.15f}' for num in self.T]) + '\n')
             f.write('S(x) ' + ' '.join([f'{num:.15f}' for num in self.S]) + '\n')
+            f.write('F(x) ' + ' '.join([f'{num:.15f}' for num in self.F]) + '\n')
 
 ############ PLOTTING CLASS ############
 
@@ -302,7 +319,6 @@ class PlotHandler:
 
         # Running simulation
         results = self.runArtificialSource(modes, source, plot)
-        times = n.array(plot)
         fig, ax = plt.subplots(figsize=(12, 8))
         fig.suptitle(f"Artificial source {source.__name__[-1]}")
 
@@ -412,7 +428,7 @@ class PlotHandler:
             for col in range(times.shape[1]):
                 x = n.linspace(-L, L, N)
                 t = list(results.values())[0][1]
-                ax[row, col].plot(x, T_0(x) / 10, lw=1.75, c='Black', ls='--', label='Stationary')
+                ax[row, col].plot(x, T_0(x) / 10, lw=1.75, c='Black', ls='-', label='$T_0(x)$')
 
                 # data = pd.read_csv("WE/1 - Ice only.csv", header=None).values
                 # data = data[n.argwhere(abs(data[:, 0] - Q) < 0.25)[0][0]][4:]
@@ -437,14 +453,85 @@ class PlotHandler:
         plt.tight_layout()
         plt.show()
 
+    @dispatch(list, interpolate.interpolate.interp1d, interpolate.interpolate.interp1d, float, float)
+    def plotSimulation(self, modes, T_0, S_x, Q, plot):
+        # Running simulation
+        results = self.runSimulation(modes, T_0, S_x, Q, plot)
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.suptitle(f"Q = {Q:.1f}")
+
+        ax.set_xlabel("x")
+        ax.set_ylabel("T(x, t)")
+
+        x = n.linspace(-L, L, N)
+        analytic, = plt.plot(x, T_0(x), ls='-', lw=1.25, c='Black', label='$T_0(x)$')
+        for mode, params in sorted(results.items()):
+            if mode == 'spectral':
+                spectral, = plt.plot(params[0], params[2][0],
+                    ls=lss[mode], lw=lws[mode], c=cs[mode], label=labels[mode])
+            if mode == 'finitediff':
+                finitediff, = plt.plot(params[0], params[2][0],
+                    ls=lss[mode], lw=lws[mode], c=cs[mode], label=labels[mode])
+            if mode == 'midpoint':
+                midpoint, = plt.plot(params[0], params[2][0],
+                    ls=lss[mode], lw=lws[mode], c=cs[mode], label=labels[mode])
+
+
+        ax.set_title(f"t = {0.0:.2f}")
+        ax.set_ylim(self.plot_lims(params[2]))
+        ax.legend()
+
+        # Make a slider to control the time.
+        ax_time = plt.axes([0.15, 0.02, 0.55, 0.03])
+        time_slider = Slider(
+            ax=ax_time,
+            label='Time [t]',
+            valmin=0,
+            valmax=1,
+            valinit=0)
+
+        # The function to be called anytime a slider's value changes
+        def update(val):
+            for mode, params in sorted(results.items()):
+                i = int(val * (params[2].shape[0] - 1))
+                if mode == 'spectral':
+                    spectral.set_ydata(params[2][i])
+                if mode == 'finitediff':
+                    finitediff.set_ydata(params[2][i])
+                if mode == 'midpoint':
+                    midpoint.set_ydata(params[2][i])
+            analytic.set_ydata(source(x, params[1][i]))
+            ax.set_title(f"t = {params[1][i]:.2f}")
+            fig.canvas.draw_idle()
+
+        time_slider.on_changed(update)
+
+        # Create a `matplotlib.widgets.Button` to reset the sliders to initial values.
+        resetax = plt.axes([0.8, 0.025, 0.1, 0.04])
+        button = Button(resetax, 'Reset', hovercolor='0.975')
+
+        def reset(event):
+            time_slider.reset()
+        button.on_clicked(reset)
+
+        # plt.tight_layout()
+        plt.show()
+
+
     def runArtificialSource(self, modes, source, t_max):
 
         # Using discretization
         x = n.linspace(-L, L, N)
         spectral_x = n.linspace(-L - 1, L + 1, N, endpoint=False)
 
+        # Computing spacial stepsize
         dx = 2 * L / (N - 1)
+        spectral_dx = 2 * (L + 1) / N
+
+        # Computing number of iterations
         M = int(t_max / (dt * dx ** 2))
+        spectral_M = int(t_max / (dt * spectral_dx ** 2))
 
         # Running simulation for 20 units of time
         results = {}
@@ -462,18 +549,15 @@ class PlotHandler:
                 else:
                     mkdir(dir)
 
-                # Calculatin new length to match other simulations
-                dxx = 2 * (L + 1) / (N - 1)
-                M_new = int(t_max / (dt * dxx ** 2))
-
                 # Configuring simulation
                 configuration = Config()
                 configuration.name = dir + "/simulationConfig.cfg"
                 configuration.mode = 'spectral'
                 configuration.artificial_source = source.__name__[-1]
                 configuration.T = source(spectral_x, 0)
+                configuration.F = convolutionWeights(spectral_dx)
                 configuration.L = L + 1
-                configuration.M = M_new
+                configuration.M = spectral_M
                 if (source.__name__[-1] in "3 4"):
                     configuration.K_l = K_w
                 configuration.write()
@@ -499,6 +583,7 @@ class PlotHandler:
                 configuration.mode = 'finitediff'
                 configuration.artificial_source = source.__name__[-1]
                 configuration.T = source(x, 0)
+                configuration.F = convolutionWeights(dx)
                 configuration.M = M
                 configuration.write()
 
@@ -522,6 +607,7 @@ class PlotHandler:
               configuration.mode = 'midpoint'
               configuration.artificial_source = source.__name__[-1]
               configuration.T = source(x, 0)
+              configuration.F = convolutionWeights(dx)
               configuration.M = M
               configuration.write()
 
@@ -565,10 +651,12 @@ class PlotHandler:
         x = n.linspace(-L, L, N)
         spectral_x = n.linspace(-L - 1, L + 1, N, endpoint=False)
 
-        # Computing number of iterations
+        # Computing spacial stepsize
         dx = 2 * L / (N - 1)
+        spectral_dx = 2 * (L + 1) / N
+
+        # Computing number of iterations
         M = int(t_max / (dt * dx ** 2))
-        spectral_dx = 2 * (L + 1) / (N - 1)
         spectral_M = int(t_max / (dt * spectral_dx ** 2))
 
         # Running simulation for 20 units of time
@@ -593,6 +681,7 @@ class PlotHandler:
                 configuration.mode = 'spectral'
                 configuration.Q = Q
                 configuration.T = T_0(spectral_x)
+                configuration.F = convolutionWeights(spectral_dx)
                 if perturbation is not None:
                     configuration.T += perturbation(spectral_x)
                 configuration.S = S_x(spectral_x)
@@ -621,6 +710,7 @@ class PlotHandler:
                 configuration.mode = 'finitediff'
                 configuration.Q = Q
                 configuration.T = T_0(x)
+                configuration.F = convolutionWeights(dx)
                 if perturbation is not None:
                     configuration.T += perturbation(x)
                 configuration.S = S_x(x)
@@ -647,6 +737,7 @@ class PlotHandler:
                 configuration.mode = 'midpoint'
                 configuration.Q = Q
                 configuration.T = T_0(x)
+                configuration.F = convolutionWeights(dx)
                 if perturbation is not None:
                     configuration.T += perturbation(x)
                 configuration.S = S_x(x)
@@ -700,6 +791,7 @@ class PlotHandler:
 
 
 def main():
+    global C_0, C_1
 
     # Deletes directories with simulations
     if delete_leftovers:
@@ -716,21 +808,19 @@ def main():
 
     handler = PlotHandler()
 
-    # if times.shape == (1, 1):
-    #     handler.plotSimulation(run, T_init, S_x, Q, times[0][0])
-    # if times is not None:
-    #     handler.plotSimulation(run, T_init, S_x, Q, times)
+    if times.shape == (1, 1):
+        handler.plotSimulation(run, T_init, S_x, Q, times[0][0])
+    if times is not None:
+        handler.plotSimulation(run, T_init, S_x, Q, times)
 
-    handler.plotArtificialSource(
-        ["spectral"], Source_2, [[0, 2.5], [5.0, 7.5]]
-    )
-    #
-    # # handler.plotArtificialSource(
-    # #     ["spectral"], Source_t, [[0.0, 3.0], [6.0, 10.0]]
-    # # )
-    #
+    # C_0 = -1; C_1 = 1;
+    # handler.plotArtificialSource(
+    #     ["spectral"], Source_2, [[0, 2.5], [5.0, 7.5]]
+    # )
+
+
     # analytic_x = n.linspace(-5, 5, 101)
-    # analytic_T = pd.read_csv("Analytic_Sol.csv", header=None).values
+    # analytic_T = pd.read_csv("Supplementary/Analytic_Sol.csv", header=None).values
     # analytic_T = analytic_T.reshape((101, 101))
     #
     # handler.plotSimulation(['spectral'], T_0, S_gaussian, 340.0,

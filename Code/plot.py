@@ -133,12 +133,12 @@ class solution:
         x = n.linspace(-10, 10, 2001)
         valsT = 10 * self.solution(x)
         valsS = self.S(x)
-        valsP = pert * n.cos(0.5 * x * n.pi / self.L)
+        valsP = pert * n.ones(2001)
 
         K_l = 1.89 if self.C_0 != self.C_1 else 0.38
 
-        # Adds information particular to this simulation
-        with open("Simulation Parameters/simulation_particular.cfg", "a") as file:
+        # Writes information particular to this simulation
+        with open("Simulation Parameters/simulation_particular.cfg", "w") as file:
             file.write(f'Q {self.Q_point}\n')
             file.write(f'C_0 {self.C_0}\n')
             file.write(f'C_1 {self.C_1}\n')
@@ -227,10 +227,10 @@ class solution:
 
 
 def main():
-    sol_name = 'G W'
+    sol_name = 'G 5.0'
     if 'W' in sol_name:
         cnt = [0, 0]
-        s_function = r"$e^{-\frac{|x|}{2}}$" if sol_name[1] == 'E' else r"$\frac{4}{\sqrt{10 \pi}}e^{-\frac{x^2}{10}}$"
+        s_function = r"$e^{-\frac{|x|}{2}}$" if sol_name[0] == 'E' else r"$\frac{4}{\sqrt{10 \pi}}e^{-\frac{x^2}{10}}$"
     elif sol_name[0] == 'G':
         cnt = [-1, 1]
         s_function = rf"$\frac{{4}}{{\sqrt{{ {float(sol_name[2:]):.1f} \pi}}}} e^{{-\frac{{x^2}}{{ {float(sol_name[2:]):.1f} }}}}$"

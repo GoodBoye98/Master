@@ -1,2 +1,6 @@
 /PDFs
 *.exe
+*.o
+s_dir*
+f_dir*
+m_dir*

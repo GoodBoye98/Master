@@ -20,6 +20,7 @@ typedef Eigen::Matrix<std::complex<double>, 1, Eigen::Dynamic> VectorXc;
 class EBalanceModel {
 public:
     // Initialization with default values
+
     EBalanceModel() {
         // Albedos
         a_0 = 0.6;
@@ -63,6 +64,17 @@ public:
             S[i] = std::exp(- std::abs(x[i]) / 2.0);
             T[i] = -1;
         }
+
+        // Default values for convolution weights
+        conv_weights.resize(29);
+        conv_weights << 4.34279724e-14, 2.46017181e-12, 1.03133790e-10, 3.20052529e-09,
+            7.35492324e-08, 1.25206964e-06, 1.57954419e-05, 1.47722688e-04,
+            1.02454260e-03, 5.27141949e-03, 2.01268086e-02, 5.70414195e-02,
+            1.20024821e-01, 1.87538153e-01, 2.17615977e-01, 1.87538153e-01,
+            1.20024821e-01, 5.70414195e-02, 2.01268086e-02, 5.27141949e-03,
+            1.02454260e-03, 1.47722688e-04, 1.57954419e-05, 1.25206964e-06,
+            7.35492324e-08, 3.20052529e-09, 1.03133790e-10, 2.46017181e-12,
+            4.34279724e-14;
     }
 
     void loadConfig(std::string configFilename) {
@@ -125,10 +137,17 @@ public:
                     S[i] = val;
                 }
             }
+            else if (ln[0] == "F(x)") {
+                int m = ln.size() - 1;
+                conv_weights.resize(m);
+                for (int i = 0; i < m; i++) {
+                    double val = std::stod(ln[1 + i]);
+                    conv_weights[i] = val;
+                }
+            }
         }
 
         if (!(T.size() == S.size())) throw "T and S vectors of unequal length";
-
 
         updateParameters();
     }
@@ -145,7 +164,6 @@ public:
         // Updating matrix/vector initialization
         x.resize(N);
         K_vec.resize(N);
-        conv_weights.resize(N);
 
         if (C_0 == C_1) {
             for (int i = 0; i < N; i++) {
@@ -162,51 +180,7 @@ public:
             }
         }
 
-        // Computing convolution vector
-        int j = 0;
-        double val = 1;
-        while (val > std::pow(10, -10)) {
-            val = 1.0 / (s * std::sqrt(pi)) * std::exp(- std::pow(j++ * dx / s, 2));
-        }
-        j -= 1;
-
-        conv_weights.resize(2 * j + 1);
-        for (int i = 0; i < j + 1; i++) {
-            if (!i) conv_weights[j] = 1.0 / (s * std::sqrt(pi));
-            else{
-                conv_weights[j + i] = 1.0 / (s * std::sqrt(pi)) * std::exp(- std::pow(i * dx / s, 2));
-                conv_weights[j - i] = 1.0 / (s * std::sqrt(pi)) * std::exp(- std::pow(i * dx / s, 2));
-            }
-        }
-
-        conv_weights = conv_weights / conv_weights.sum();
-
-        Eigen::VectorXd resultVec(N);
-        conv_1d(resultVec, K_vec);
-        K_vec = resultVec;
-
-        // Eigen::VectorXd A_1(N);
-        // for (int i = 0; i < N; i++) {
-        //     if (std::abs(x[i]) > 1) A_1[i] = 1 + 24 * 0.38 / 1.89 - x[i] * x[i];
-        //     else A_1[i] = - 0.38 / 1.89 * (x[i] * x[i] - 25);
-        // }
-        // Eigen::VectorXd resultVec2(N);
-        // Eigen::VectorXd resultVec3(N);
-        // pd(resultVec, K_vec, A_1);
-        // pd_2(resultVec2, K_vec, A_1);
-        // pd_3(resultVec3, K_vec, A_1);
-        //
-        // std::ofstream file_1("pd.csv");
-        // file_1 << resultVec.format(CSVFormat);
-        // file_1.close();
-        //
-        // std::ofstream file_2("pd_2.csv");
-        // file_2 << resultVec2.format(CSVFormat);
-        // file_2.close();
-        //
-        // std::ofstream file_3("pd_3.csv");
-        // file_3 << resultVec3.format(CSVFormat);
-        // file_3.close();
+        // K_vec = conv_1d(K_vec);
     }
 
     void finitediff_artificial_source_1() {
@@ -351,7 +325,7 @@ public:
     }
 
     void spectral_artificial_source_1() {
-        VectorXc scaleFactor(N);
+
         Eigen::VectorXd partial_diff(N);
         Eigen::VectorXd albedo(N);
         Eigen::VectorXd k(N);
@@ -366,7 +340,6 @@ public:
             k[i] = - K + i * 2 * K / N;
             if (C_0 == C_1) K_vec[i] = K_w;
             else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            scaleFactor[i] = N / 4;
         }
 
         std::cout << "Artificial source 1: Spectral method\n";
@@ -419,7 +392,7 @@ public:
     }
 
     void spectral_artificial_source_2() {
-        VectorXc scaleFactor(N);
+
         double m = 0.38 / 1.89;
         Eigen::VectorXd partial_diff(N);
         Eigen::VectorXd A_1(N);
@@ -438,7 +411,6 @@ public:
             if (C_0 == C_1) K_vec[i] = K_w;
             else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
             K_vec_local[i] = K_vec[i] - 1;
-            scaleFactor[i] = N / 4;
             if (std::abs(x[i]) > 1) {
                 A_1[i] = 1 + 24 * m - x[i] * x[i];
                 A_2[i] = -2;
@@ -498,7 +470,7 @@ public:
     }
 
     void spectral_artificial_source_3() {
-        VectorXc scaleFactor(N);
+
         Eigen::VectorXd albedo(N);
         Eigen::VectorXd k(N);
         Eigen::MatrixXd saved(len, N + 1);
@@ -511,7 +483,6 @@ public:
             k[i] = - K + i * 2 * K / N;
             if (C_0 == C_1) K_vec[i] = K_w;
             else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            scaleFactor[i] = N / 4;
         }
 
         std::cout << "Artificial source 3: Spectral method\n";
@@ -524,7 +495,6 @@ public:
 
         fft.fwd(G, T);
         G = fftshift(G);
-        G = G.cwiseQuotient(scaleFactor);
 
         for (int i = 0; i < M; i++) {
 
@@ -544,14 +514,12 @@ public:
 
             fft.fwd(rhs, dG);
             rhs = fftshift(rhs);
-            rhs = rhs.cwiseQuotient(scaleFactor);
             for (int j = 0; j < N; j++) {
                 dG[j] = rhs[j] - (K_vec[j] * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
 
-            rhs = rhs.cwiseProduct(scaleFactor);
             rhs = fftshift(rhs);
 
             fft.inv(dG, rhs);
@@ -566,7 +534,7 @@ public:
     }
 
     void spectral_artificial_source_4() {
-        VectorXc scaleFactor(N);
+
         Eigen::VectorXd albedo(N);
         Eigen::VectorXd k(N);
         Eigen::MatrixXd saved(len, N + 1);
@@ -579,7 +547,6 @@ public:
             k[i] = - K + i * 2 * K / N;
             if (C_0 == C_1) K_vec[i] = K_w;
             else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            scaleFactor[i] = N / 4;
         }
 
         std::cout << "Artificial source 4: Spectral method\n";
@@ -592,7 +559,6 @@ public:
 
         fft.fwd(G, T);
         G = fftshift(G);
-        G = G.cwiseQuotient(scaleFactor);
 
         for (int i = 0; i < M; i++) {
 
@@ -610,14 +576,12 @@ public:
 
             fft.fwd(rhs, dG);
             rhs = fftshift(rhs);
-            rhs = rhs.cwiseQuotient(scaleFactor);
             for (int j = 0; j < N; j++) {
                 dG[j] = rhs[j] - (K_vec[j] * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
 
-            rhs = rhs.cwiseProduct(scaleFactor);
             rhs = fftshift(rhs);
 
             fft.inv(dG, rhs);
@@ -632,10 +596,11 @@ public:
     }
 
     void runSpectralMethod() {
-        VectorXc scaleFactor(N);
+        
         Eigen::VectorXd partial_diff(N);
         Eigen::VectorXd albedo(N);
         Eigen::VectorXd k(N);
+        Eigen::VectorXd K_vec_local(N);
         Eigen::MatrixXd saved(len, N + 1);
         std::vector<int> saveIndexes;
         for (int i = 0; i < len - 1; i++) {
@@ -646,7 +611,7 @@ public:
             k[i] = - K + i * 2 * K / N;
             if (C_0 == C_1) K_vec[i] = K_w;
             else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            scaleFactor[i] = N / 4;
+            K_vec_local[i] = K_vec[i] - 1;
         }
 
         std::cout << "Running spectral simulation\n";
@@ -672,12 +637,10 @@ public:
 
 
             a(albedo, T);
-            pd(partial_diff, K_vec, T);
-            // T_temp[0] = Q * S[0] * (1 - albedo[0]);
+            pd(partial_diff, K_vec_local, T);
             for (int j = 0; j < N; j++) {
                 T_temp[j] = Q * S[j] * (1 - albedo[j]) - A + partial_diff[j];
             }
-            // T_temp[N - 1] = Q * S[N - 1] * (1 - albedo[N - 1]);
 
             fft.fwd(rhs, T_temp);
             rhs = fftshift(rhs);
@@ -1025,6 +988,22 @@ public:
                 result[i] += input[i+j] * conv_weights[offset + j];
             }
         }
+    }
+
+    Eigen::VectorXd conv_1d(Eigen::VectorXd& input) {
+        int N_len = conv_weights.rows();
+        int offset = (N_len - 1) / 2;
+
+        Eigen::VectorXd newVec = input;
+
+        for (int i = offset; i < N - offset; i++) {
+            newVec[i] = 0;
+            for (int j = - offset; j < offset + 1; j++) {
+                newVec[i] += input[i+j] * conv_weights[offset + j];
+            }
+        }
+
+        return newVec;
     }
 
     VectorXc fftshift(VectorXc& G_input) {
