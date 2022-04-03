@@ -1,6 +1,11 @@
 /PDFs
+/Code/Gaussian
+/Code/Exponential
 *.exe
 *.o
 s_dir*
 f_dir*
 m_dir*
+tempDir_*
+*.csv
+__pycache__
