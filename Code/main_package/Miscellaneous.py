@@ -96,7 +96,7 @@ def sortFiles(dir, base_name, how='bot', usecols=[0, 1]):
         idxSorted = n.array(idxSorted)
         n.savetxt(f"{dir}/{file}", dataFull[idxSorted], delimiter=",", fmt='%.14f')
 
-        print(f"{file} has been sorted according to 'bot'.")
+        print(f"{file} has been sorted according to '{how}'.")
 
 
 def randomString(length=10):

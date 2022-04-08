@@ -286,7 +286,7 @@ public:
             saveIndexes.push_back((double) (i * M) / (len - 1));
         }
 
-        std::cout << "Running finite difference simulation\n";
+        // std::cout << "Running finite difference simulation\n";
         // printValues();
 
         for (int i = 0; i < M; i++) {
@@ -612,7 +612,7 @@ public:
             K_vec_local[i] = K_vec[i] - 1;
         }
 
-        std::cout << "Running spectral simulation\n";
+        // std::cout << "Running spectral simulation\n";
         // printValues();
 
         Eigen::FFT<double> fft;
@@ -888,23 +888,6 @@ public:
     }
 
     void printValues() {
-        // std::cout << "a_0 = " << a_0 << "\n";
-        // std::cout << "a_1 = " << a_1 << "\n";
-        // std::cout << "Q = " << Q << "\n\n";
-        //
-        // std::cout << "K_w = " << K_w << "\n";
-        // std::cout << "K_l = " << K_l << "\n\n";
-        //
-        // std::cout << "C_w = " << C_w << "\n";
-        // std::cout << "C_l = " << C_l << "\n\n";
-        //
-        // std::cout << "C_0 = " << C_0 << "\n";
-        // std::cout << "C_1 = " << C_1 << "\n\n";
-        //
-        // std::cout << "A = " << A << "\n";
-        // std::cout << "B = " << B << "\n";
-        // std::cout << "C = " << C << "\n\n";
-
         std::cout << "dx = " << dx << "\n";
         std::cout << "dt = " << dt << "\n";
         std::cout << "s = " << s << "\n";

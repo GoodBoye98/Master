@@ -1,6 +1,11 @@
 import numpy as n
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 from matplotlib.widgets import Slider
+
+
+def consecutive(data, stepsize=1):
+    return n.split(data, n.where(n.diff(data) != stepsize)[0] + 1)
 
 
 def highlightSolution(fig, ax, solutionData):
@@ -57,7 +62,54 @@ def highlightSolution(fig, ax, solutionData):
         global activeSol
         if event.button == 3 and activeSol is not None:
             # Runs simulation of highlighted solution
-            solutionData(activeSol)
+            try:
+                solutionData(activeSol)
+            except ValueError as e:
+                print(f"Invalid data in {solutionData.getSolutionName(activeSol)}, run processFiles()")
 
     fig.canvas.mpl_connect('button_press_event', onclick)
     fig.canvas.mpl_connect('motion_notify_event', onmove)
+
+
+def colorStationarySolution(fig, ax, data):
+    C_0 = data[2]
+    C_1 = data[3]
+    T = data[4:]
+
+    x = n.linspace(-6, 6, T.shape[0])
+    idx = n.arange(T.shape[0])
+    l_0, l_1 = n.argmin(n.abs(x - C_0)), n.argmin(n.abs(x - C_1))
+
+    ice = n.argwhere(T[idx] < -10)[:, 0]
+    ice = ice[(ice < l_0) | (ice > l_1)]
+    water = n.argwhere(T[idx] >= -10)[:, 0]
+    water = water[(water < l_0) | (water > l_1)]
+
+    snow = n.argwhere(T[idx] < 0)[:, 0]
+    snow = snow[(snow >= l_0) & (snow <= l_1)]
+    land = n.argwhere(T[idx] >= 0)[:, 0]
+    land = land[(land >= l_0) & (land <= l_1)]
+
+    if ice.shape[0]:
+        ax.plot(0, 0, c="lightblue", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()], label='Ice')
+        segments = consecutive(ice)
+        for seg in segments:
+            ax.plot(x[idx[seg]], T[idx[seg]], c="lightblue", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()])
+
+    if water.shape[0]:
+        ax.plot(0, 0, c="blue", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()], label='Water')
+        segments = consecutive(water)
+        for seg in segments:
+            ax.plot(x[idx[seg]], T[idx[seg]], c="blue", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()])
+
+    if snow.shape[0]:
+        ax.plot(0, 0, c="snow", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()], label='Snow')
+        segments = consecutive(snow)
+        for seg in segments:
+            ax.plot(x[idx[seg]], T[idx[seg]], c="snow", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()])
+
+    if land.shape[0]:
+        ax.plot(0, 0, c="brown", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()], label='Land')
+        segments = consecutive(land)
+        for seg in segments:
+            ax.plot(x[idx[seg]], T[idx[seg]], c="brown", path_effects=[pe.Stroke(linewidth=3, foreground='black'), pe.Normal()])

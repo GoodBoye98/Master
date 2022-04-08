@@ -5,7 +5,6 @@ import pandas as pd
 from os import listdir, mkdir, rmdir
 from os.path import isfile, join
 from main_package.Miscellaneous import randomString
-
 from main_package.solutionFamily import solutionFamily
 
 
@@ -19,9 +18,10 @@ class solutionData:
             if subDir == "Water":
                 self.C_0 = 0
                 self.C_1 = 0
-            else:
-                self.C_0 = -1 + float(subDir)
-                self.C_1 = 1 + float(subDir)
+            elif "Continent Offset" in subDir:
+                value = float(subDir.replace("Continent Offset ", ""))
+                self.C_0 = -1 + value
+                self.C_1 = 1 + value
             self.S = f"lambda x : n.exp(-n.abs(x) / 2)"
             self.S_latex = r"$S(x)=e^{-\frac{|x|}{2}}$"
         elif mainDir == "Gaussian":
@@ -29,10 +29,15 @@ class solutionData:
             if subDir == "Water":
                 self.C_0 = 0
                 self.C_1 = 0
-            else:
+            elif "Continent Offset" in subDir:
+                value = float(subDir.replace("Continent Offset ", ""))
+                self.C_0 = -1 + value
+                self.C_1 = 1 + value
+                val = 5
+            elif "Standard Deviation" in subDir:
                 self.C_0 = -1
                 self.C_1 = 1
-                val = float(subDir)
+                val = float(subDir.replace("Standard Deviation ", ""))
             self.S = f"lambda x: 4 / (n.sqrt(n.pi * {val})) * n.exp(- x * x / {val})"
             self.S_latex = r"$S(x)=\frac{4}{\sqrt{V \pi}}e^{-\frac{x^2}{V}}$".replace('V', str(val))
         else:
@@ -63,13 +68,14 @@ class solutionData:
                 # Loads solution data
                 loaddir = f"{self.dir}/{family.name}.csv"
                 solution = pd.read_csv(loaddir, header=None, skiprows=index, nrows=1).values[0]
-                
-                # Creates simulation directory
-                newDir = f'tempDir_{randomString(15)}'
-                mkdir(f'main_package/{newDir}')
 
                 # Saves solution data in new directory
                 solData = f'{solution[0]} {solution[1]} {self.C_0} {self.C_1} ' + ' '.join(f'{10 * v:.14f}' for v in solution[self.params.shape[0]:])
+                
+                # Creates simulation directory if data was loaded succesfully
+                newDir = f'tempDir_{randomString(15)}'
+                mkdir(f'main_package/{newDir}')
+
                 with open(f'main_package/{newDir}/solData.txt', 'w') as file:
                     file.write(solData)
                 with open(f'main_package/{newDir}/S(x).txt', 'w') as file:
@@ -94,3 +100,11 @@ class solutionData:
         for family in self.families:
             data.append(family.getSols(measure))
         return n.vstack(data)
+
+
+    def getSolutionName(self, index):
+        for family in self.families:
+            if index < family.Q.shape[0]:
+                return family.name
+            else:
+                index -= family.Q.shape[0]

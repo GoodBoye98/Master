@@ -4,6 +4,7 @@ import numpy as n
 import tkinter as tk
 import matplotlib.pyplot as plt
 from Miscellaneous import randomString
+from plotFunctions import colorStationarySolution
 from runSimulation import runSimulation
 from tkinter import font, ttk
 from subprocess import run, DEVNULL
@@ -37,6 +38,7 @@ def main():
 
         mkdir(dir)
 
+
     # Opening simluation parameter GUI
     master = tk.Tk()
     
@@ -55,25 +57,35 @@ def main():
 
     plt.ion()
     fig, ax = plt.subplots(2, 2, figsize=(8, 6))
-    fig.suptitle(f'Q = {Q}\n{name}')
+    fig.suptitle(f'Q = {Q:.2f}\n{name}')
 
     x = n.linspace(-6, 6, T.shape[0])
-    ax[0, 0].plot(x, T, c='Black', ls='-', label='Stationary')
+    # ax.plot(x, T, c='Black', ls='-', label='Stationary')
+    for i in range(2):
+        for j in range(2):
+            colorStationarySolution(fig, ax[i, j], data)
     ax[0, 0].set_xlabel('x (earth radiuses)')
     ax[0, 0].set_ylabel('T (℃)')
     ax[0, 0].legend()
-    ax[0, 1].plot(x, T, c='Black', ls='-', label='Stationary')
-    ax[0, 1].set_xlabel('x (earth radiuses)')
-    ax[0, 1].set_ylabel('T (℃)')
-    ax[0, 1].legend()
-    ax[1, 0].plot(x, T, c='Black', ls='-', label='Stationary')
-    ax[1, 0].set_xlabel('x (earth radiuses)')
-    ax[1, 0].set_ylabel('T (℃)')
-    ax[1, 0].legend()
-    ax[1, 1].plot(x, T, c='Black', ls='-', label='Stationary')
-    ax[1, 1].set_xlabel('x (earth radiuses)')
-    ax[1, 1].set_ylabel('T (℃)')
-    ax[1, 1].legend()
+
+    ax[0, 1].set_visible(False)
+    ax[1, 0].set_visible(False)
+    ax[1, 1].set_visible(False)
+    # # ax[0, 1].plot(x, T, c='Black', ls='-', label='Stationary')
+    # colorStationarySolution(fig, ax[0, 1], data)
+    # ax[0, 1].set_xlabel('x (earth radiuses)')
+    # ax[0, 1].set_ylabel('T (℃)')
+    # ax[0, 1].legend()
+    # # ax[1, 0].plot(x, T, c='Black', ls='-', label='Stationary')
+    # colorStationarySolution(fig, ax[1, 0], data)
+    # ax[1, 0].set_xlabel('x (earth radiuses)')
+    # ax[1, 0].set_ylabel('T (℃)')
+    # ax[1, 0].legend()
+    # # ax[1, 1].plot(x, T, c='Black', ls='-', label='Stationary')
+    # colorStationarySolution(fig, ax[1, 1], data)
+    # ax[1, 1].set_xlabel('x (earth radiuses)')
+    # ax[1, 1].set_ylabel('T (℃)')
+    # ax[1, 1].legend()
     plt.tight_layout()
 
 
@@ -86,7 +98,6 @@ def main():
             fSim.startSimulation()
 
             fSim.times = n.array([s.split(' ') for s in tEntry.get().split('; ')], dtype=float)
-            print(fSim.times)
 
             fBut.destroy()
             
@@ -109,7 +120,6 @@ def main():
             sSim.startSimulation()
 
             sSim.times = n.array([s.split(' ') for s in tEntry.get().split('; ')], dtype=float)
-            print(sSim.times)
 
             sBut.destroy()
             
@@ -145,6 +155,9 @@ def main():
 
         # Plotting solutions if they're finished
         if fSim.getResultFirst():
+            ax[0, 1].set_visible(True)
+            ax[1, 0].set_visible(True)
+            ax[1, 1].set_visible(True)
             x, data = fSim.getResult()
             ax[0, 0].set_title(f't={fSim.times[0, 0]}')
             ax[0, 0].plot(x, data[0, 1:], c='blue', ls='-.', label='Finite difference')
@@ -162,6 +175,9 @@ def main():
             fig.canvas.draw()
         
         if sSim.getResultFirst():
+            ax[0, 1].set_visible(True)
+            ax[1, 0].set_visible(True)
+            ax[1, 1].set_visible(True)
             x, data = sSim.getResult()
             ax[0, 0].set_title(f't={fSim.times[0, 0]}')
             ax[0, 0].plot(x, data[0, 1:], c='orange', ls='--', label='Spectral')
