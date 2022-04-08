@@ -9,4 +9,4 @@ m_dir*
 tempDir_*
 *.csv
 __pycache__
-/.vscode
+.vscode
