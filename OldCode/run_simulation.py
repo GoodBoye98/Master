@@ -138,7 +138,7 @@ lws = {'spectral': 1.75,
        'finitediff': 1.75,
        'midpoint': 1.75,
        'analytic': 1.75}
-cs = {'spectral': 'Orange',
+cs = {'spectral': 'darkorange',
       'finitediff': 'deepskyblue',
       'midpoint': 'Green',
       'analytic': 'Black'}

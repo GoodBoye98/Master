@@ -121,7 +121,6 @@ public:
                 for (int i = 0; i < N; i++) {
                     double val = std::stod(ln[1 + i]);
                     T[i] = val;
-
                 }
             }
             else if (ln[0] == "S(x)") {
@@ -142,8 +141,6 @@ public:
             }
         }
 
-        if (!(T.size() == S.size())) throw "T and S vectors of unequal length";
-
         updateParameters();
     }
 
@@ -163,18 +160,15 @@ public:
         if (C_0 == C_1) {
             for (int i = 0; i < N; i++) {
                 x[i] = - L + i * 2 * L / (N - 1);
-
                 K_vec[i] = K_w;
             }
         }
         else {
             for (int i = 0; i < N; i++) {
                 x[i] = - L + i * 2 * L / (N - 1);
-
                 K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
             }
         }
-
         K_vec = conv_1d(K_vec);
     }
 
@@ -189,8 +183,8 @@ public:
             saveIndexes.push_back((double) (i * M) / (len - 1));
         }
 
-        std::cout << "Artificial source 1: Finite difference\n";
-        printValues();
+        // std::cout << "Artificial source 1: Finite difference\n";
+        // printValues();
 
         for (int i = 0; i < M; i++) {
 
@@ -199,6 +193,10 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             // Computing midpoint in the method
@@ -240,8 +238,8 @@ public:
             }
         }
 
-        std::cout << "Artificial source 2: Finite difference\n";
-        printValues();
+        // std::cout << "Artificial source 2: Finite difference\n";
+        // printValues();
 
         std::vector<int> saveIndexes;
         for (int i = 0; i < len - 1; i++) {
@@ -255,6 +253,10 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             // Computing midpoint in the method
@@ -336,12 +338,12 @@ public:
         for (int i = 0; i < N; i++) {
             x[i] = - L + i * 2 * L / N;
             k[i] = - K + i * 2 * K / N;
-            if (C_0 == C_1) K_vec[i] = K_w;
-            else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
         }
+        dx = 2 * L / N;
+        dt = dt_coef * dx * dx;
 
-        std::cout << "Artificial source 1: Spectral method\n";
-        printValues();
+        // std::cout << "Artificial source 1: Spectral method\n";
+        // printValues();
 
         Eigen::FFT<double> fft;
         VectorXc G(N);
@@ -358,6 +360,10 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             pd(partial_diff, K_vec, T);
@@ -406,9 +412,7 @@ public:
         for (int i = 0; i < N; i++) {
             x[i] = - L + i * 2 * L / N;
             k[i] = - K + i * 2 * K / N;
-            if (C_0 == C_1) K_vec[i] = K_w;
-            else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            K_vec_local[i] = K_vec[i] - 1;
+            K_vec_local[i] = K_vec[i] - K_w;
             if (std::abs(x[i]) > 1) {
                 A_1[i] = 1 + 24 * m - x[i] * x[i];
                 A_2[i] = -2;
@@ -418,9 +422,11 @@ public:
                 A_2[i] = -2 * m;
             }
         }
+        dx = 2 * L / N;
+        dt = dt_coef * dx * dx;
 
-        std::cout << "Artificial source 2: Spectral method\n";
-        printValues();
+        // std::cout << "Artificial source 2: Spectral method\n";
+        // printValues();
 
         Eigen::FFT<double> fft;
         VectorXc G(N);
@@ -437,6 +443,10 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             pd(partial_diff, K_vec_local, T);
@@ -448,7 +458,7 @@ public:
             fft.fwd(rhs, dG);
             rhs = fftshift(rhs);
             for (int j = 0; j < N; j++) {
-                dG[j] = rhs[j] - (k[j] * k[j] + B) * G[j];
+                dG[j] = rhs[j] - (K_w * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
@@ -479,12 +489,12 @@ public:
         for (int i = 0; i < N; i++) {
             x[i] = - L + i * 2 * L / N;
             k[i] = - K + i * 2 * K / N;
-            if (C_0 == C_1) K_vec[i] = K_w;
-            else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
         }
+        dx = 2 * L / N;
+        dt = dt_coef * dx * dx;
 
-        std::cout << "Artificial source 3: Spectral method\n";
-        printValues();
+        // std::cout << "Artificial source 3: Spectral method\n";
+        // printValues();
 
         Eigen::FFT<double> fft;
         VectorXc G(N);
@@ -501,19 +511,23 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             double tp1 = i * dt + 1;
 
             for (int j = 0; j < N; j++) {
                 dG[j] = std::exp(- x[j] * x[j]) / (tp1 * tp1) *
-                    (-C + B * tp1 + 2 * K_vec[j] * tp1 * (- 2 * x[j] * x[j] + 1));
+                    (-C + B * tp1 + 2 * K_w * tp1 * (- 2 * x[j] * x[j] + 1));
             }
 
             fft.fwd(rhs, dG);
             rhs = fftshift(rhs);
             for (int j = 0; j < N; j++) {
-                dG[j] = rhs[j] - (K_vec[j] * k[j] * k[j] + B) * G[j];
+                dG[j] = rhs[j] - (K_w * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
@@ -543,12 +557,12 @@ public:
         for (int i = 0; i < N; i++) {
             x[i] = - L + i * 2 * L / N;
             k[i] = - K + i * 2 * K / N;
-            if (C_0 == C_1) K_vec[i] = K_w;
-            else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
         }
+        dx = 2 * L / N;
+        dt = dt_coef * dx * dx;
 
-        std::cout << "Artificial source 4: Spectral method\n";
-        printValues();
+        // std::cout << "Artificial source 4: Spectral method\n";
+        // printValues();
 
         Eigen::FFT<double> fft;
         VectorXc G(N);
@@ -565,6 +579,10 @@ public:
                 int idx = (int) (it - saveIndexes.begin());
                 saved.block(idx, 1, 1, N) = T.transpose();
                 saved(idx, 0) = i * dt;
+
+                std::ofstream file("progress.txt");
+                file << idx + 1 << 'f';
+                file.close();
             }
 
             for (int j = 0; j < N; j++) {
@@ -575,7 +593,7 @@ public:
             fft.fwd(rhs, dG);
             rhs = fftshift(rhs);
             for (int j = 0; j < N; j++) {
-                dG[j] = rhs[j] - (K_vec[j] * k[j] * k[j] + B) * G[j];
+                dG[j] = rhs[j] - (K_w * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
@@ -607,10 +625,10 @@ public:
         for (int i = 0; i < N; i++) {
             x[i] = - L + i * 2 * L / N;
             k[i] = - K + i * 2 * K / N;
-            if (C_0 == C_1) K_vec[i] = K_w;
-            else K_vec[i] = (C_0 <= x[i] && x[i] <= C_1) ? K_l : K_w;
-            K_vec_local[i] = K_vec[i] - 1;
+            K_vec_local[i] = K_vec[i] - K_w;
         }
+        dx = 2 * L / N;
+        dt = dt_coef * dx * dx;
 
         // std::cout << "Running spectral simulation\n";
         // printValues();
@@ -648,7 +666,7 @@ public:
             fft.fwd(rhs, T_temp);
             rhs = fftshift(rhs);
             for (int j = 0; j < N; j++) {
-                dG[j] = rhs[j] - (k[j] * k[j] + B) * G[j];
+                dG[j] = rhs[j] - (K_w * k[j] * k[j] + B) * G[j];
             }
             G += dG * dt / C;
             rhs = G;
@@ -665,226 +683,6 @@ public:
 
         saveMatrix(saved, "result.sim");
 
-    }
-
-    void midpoint_artificial_source_1() {
-        Eigen::VectorXd bAT(N);
-        Eigen::VectorXd albedo(N);
-        Eigen::VectorXd f_midpoint(N);
-        Eigen::VectorXd T_midpoint(N);
-        Eigen::MatrixXd saved(len, N + 1);
-        Eigen::SparseMatrix<double> A_mat(N, N);
-        double b = 1 / (dx * dx);
-
-
-        std::vector<Eigen::Triplet<double>> triplets;
-        triplets.reserve(3 * (N - 2));
-        for (int i = 1; i < N - 1; i++) {
-            triplets.push_back(Eigen::Triplet<double>(i, i - 1, K_vec[i - 1]));
-            triplets.push_back(Eigen::Triplet<double>(i, i, - K_vec[i - 1] - K_vec[i]));
-            triplets.push_back(Eigen::Triplet<double>(i, i + 1, K_vec[i]));
-        }
-        A_mat.setFromTriplets(triplets.begin(), triplets.end());
-
-        std::vector<int> saveIndexes;
-        for (int i = 0; i < len - 1; i++) {
-            saveIndexes.push_back((double) (i * M) / (len - 1));
-        }
-
-        std::cout << "Artificial source 1: Midpoint method\n";
-        printValues();
-
-
-        for (int i = 0; i < M; i++) {
-
-            std::vector<int>::iterator it = std::find(saveIndexes.begin(), saveIndexes.end(), i);
-            if(it != saveIndexes.end()) {
-                int idx = (int) (it - saveIndexes.begin());
-                saved.block(idx, 1, 1, N) = T.transpose();
-                saved(idx, 0) = i * dt;
-            }
-
-            // Computing midpoint in the method
-            bAT = b * A_mat * T;
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = 1.0 / 100.0 * std::cos(pi / 10 * x[j]) *
-                    ((100 * B + K_vec[j] * pi * pi) * std::cos(i * dt) -
-                    100 * C * std::sin(i * dt)) - B * T[j] + bAT[j];
-            }
-
-
-            // Computing total midpoint method
-            T_midpoint = T;
-            T_midpoint += 0.5 * dt / C * f_midpoint;
-            bAT = b * A_mat * T_midpoint;
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = 1.0 / 100.0 * std::cos(pi / 10 * x[j]) *
-                    ((100 * B + K_vec[j] * pi * pi) * std::cos((i + 0.5) * dt) -
-                    100 * C * std::sin((i + 0.5) * dt)) - B * T_midpoint[j] + bAT[j];
-            }
-
-            // Updating simulation according to midpoint method
-            T += dt / C * f_midpoint;
-        }
-
-        saved.block(len - 1, 1, 1, N) = T.transpose();
-        saved(len - 1, 0) = M * dt;
-
-        saveMatrix(saved, "result.sim");
-    }
-
-    void midpoint_artificial_source_2() {
-        // Setting up variables
-        Eigen::VectorXd bAT(N);
-        Eigen::VectorXd albedo(N);
-        Eigen::VectorXd f_midpoint(N);
-        Eigen::VectorXd T_midpoint(N);
-        Eigen::MatrixXd saved(len, N + 1);
-        Eigen::SparseMatrix<double> A_mat(N, N);
-        double b = 1 / (dx * dx);
-
-        // Setting up helper functions
-        double m = 0.38 / 1.89;
-        Eigen::VectorXd A_1(N);
-        Eigen::VectorXd A_2(N);
-
-        for (int i = 0; i < N; i++) {
-            if (std::abs(x[i]) > 1) {
-                A_1[i] = 1 + 24 * m - x[i] * x[i];
-                A_2[i] = -2;
-            }
-            else {
-                A_1[i] = - m * (x[i] * x[i] - 25);
-                A_2[i] = -2 * m;
-            }
-        }
-
-        // Creating sparse matrix
-        std::vector<Eigen::Triplet<double>> triplets;
-        triplets.reserve(3 * (N - 2));
-        for (int i = 1; i < N - 1; i++) {
-            triplets.push_back(Eigen::Triplet<double>(i, i - 1, K_vec[i - 1]));
-            triplets.push_back(Eigen::Triplet<double>(i, i, - K_vec[i - 1] - K_vec[i]));
-            triplets.push_back(Eigen::Triplet<double>(i, i + 1, K_vec[i]));
-        }
-        A_mat.setFromTriplets(triplets.begin(), triplets.end());
-
-        std::vector<int> saveIndexes;
-        for (int i = 0; i < len - 1; i++) {
-            saveIndexes.push_back((double) (i * M) / (len - 1));
-        }
-
-        // Printing info about simulation
-        std::cout << "Artificial source 2: Midpoint method\n";
-        printValues();
-
-
-        for (int i = 0; i < M; i++) {
-
-            std::vector<int>::iterator it = std::find(saveIndexes.begin(), saveIndexes.end(), i);
-            if(it != saveIndexes.end()) {
-                int idx = (int) (it - saveIndexes.begin());
-                saved.block(idx, 1, 1, N) = T.transpose();
-                saved(idx, 0) = i * dt;
-            }
-
-            // Computing midpoint in the method
-            bAT = b * A_mat * T;
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = - K_vec[j] * std::cos(i * dt) * A_2[j] +
-                    A_1[j] * (B * std::cos(i * dt) - C * std::sin(i * dt))
-                    - B * T[j] + bAT[j];
-            }
-
-            // std::cout << albedo.transpose() << std::endl << std::endl;
-            // std::cout << f_midpoint.transpose() << std::endl << std::endl;
-
-
-            // Computing total midpoint method
-            T_midpoint = T;
-            T_midpoint += 0.5 * dt / C * f_midpoint;
-            bAT = b * A_mat * T_midpoint;
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = - K_vec[j] * std::cos((i + 0.5) * dt) * A_2[j] +
-                    A_1[j] * (B * std::cos((i + 0.5) * dt) - C * std::sin((i + 0.5) * dt))
-                    - B * T_midpoint[j] + bAT[j];
-            }
-
-            // Updating simulation according to midpoint method
-            T += dt / C * f_midpoint;
-        }
-
-        saved.block(len - 1, 1, 1, N) = T.transpose();
-        saved(len - 1, 0) = M * dt;
-
-        saveMatrix(saved, "result.sim");
-    }
-
-    void runMidpointMethod() {
-        Eigen::VectorXd bAT(N);
-        Eigen::VectorXd albedo(N);
-        Eigen::VectorXd f_midpoint(N);
-        Eigen::VectorXd T_midpoint(N);
-        Eigen::MatrixXd saved(len, N + 1);
-        Eigen::SparseMatrix<double> A_mat(N, N);
-        double b = 1 / (dx * dx);
-
-
-        std::vector<Eigen::Triplet<double>> triplets;
-        triplets.reserve(3 * (N - 2));
-        for (int i = 1; i < N - 1; i++) {
-            triplets.push_back(Eigen::Triplet<double>(i, i - 1, K_vec[i - 1]));
-            triplets.push_back(Eigen::Triplet<double>(i, i, - K_vec[i - 1] - K_vec[i]));
-            triplets.push_back(Eigen::Triplet<double>(i, i + 1, K_vec[i]));
-        }
-        A_mat.setFromTriplets(triplets.begin(), triplets.end());
-
-        std::vector<int> saveIndexes;
-        for (int i = 0; i < len - 1; i++) {
-            saveIndexes.push_back((double) (i * M) / (len - 1));
-        }
-
-        std::cout << "Running midpoint method simulation\n";
-        printValues();
-
-
-        for (int i = 0; i < M; i++) {
-
-            std::vector<int>::iterator it = std::find(saveIndexes.begin(), saveIndexes.end(), i);
-            if(it != saveIndexes.end()) {
-                int idx = (int) (it - saveIndexes.begin());
-                saved.block(idx, 1, 1, N) = T.transpose();
-                saved(idx, 0) = i * dt;
-            }
-
-            // Computing midpoint in the method
-            bAT = b * A_mat * T;
-            a(albedo, T);
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = Q * S[j] * (1 - albedo[j]) - A - B * T[j] + bAT[j];
-            }
-
-            // std::cout << albedo.transpose() << std::endl << std::endl;
-            // std::cout << f_midpoint.transpose() << std::endl << std::endl;
-
-
-            // Computing total midpoint method
-            T_midpoint = T;
-            T_midpoint += 0.5 * dt / C * f_midpoint;
-            bAT = b * A_mat * T_midpoint;
-            a(albedo, T_midpoint);
-            for (int j = 0; j < N; j++) {
-                f_midpoint[j] = Q * S[j] * (1 - albedo[j]) - A - B * T_midpoint[j] + bAT[j];
-            }
-
-            // Updating simulation according to midpoint method
-            T += dt / C * f_midpoint;
-        }
-
-        saved.block(len - 1, 1, 1, N) = T.transpose();
-        saved(len - 1, 0) = M * dt;
-
-        saveMatrix(saved, "result.sim");
     }
 
     void printValues() {
@@ -907,43 +705,15 @@ public:
         file_2.close();
     }
 
-    void pd_3(Eigen::VectorXd& result, Eigen::VectorXd& k_vec, Eigen::VectorXd& t_vec) {
-
-        double inv_dx = 1.0 / std::pow(dx, 2);
-
-        for (int i = 1; i < N - 1; i++) {
-            result[i] = inv_dx * (k_vec[i] * (t_vec[i + 1] - t_vec[i]) - k_vec[i - 1] * (t_vec[i] - t_vec[i - 1]));
-        }
-
-        // Applying boundary conditions
-        result[0] = result[1];
-        result[N - 1] = result[N - 2];
-    }
-
-    void pd_2(Eigen::VectorXd& result, Eigen::VectorXd& k_vec, Eigen::VectorXd& t_vec) {
-
-        double inv_2dx = 1.0 / std::pow(2 * dx, 2);
-        double inv_dx = 1.0 / std::pow(dx, 2);
-
-        for (int i = 1; i < N - 1; i++) {
-            result[i] = inv_2dx * (k_vec[i + 1] - k_vec[i - 1]) * (t_vec[i + 1] - t_vec[i - 1]) +
-                     inv_dx * k_vec[i] * (t_vec[i + 1] - 2 * t_vec[i] + t_vec[i - 1]);
-        }
-
-        // Applying boundary conditions
-        result[0] = result[1];
-        result[N - 1] = result[N - 2];
-    }
-
     void pd(Eigen::VectorXd& result, Eigen::VectorXd& k_vec, Eigen::VectorXd& t_vec) {
 
         double inv_dx = 0.5 / std::pow(dx, 2);
 
-        
+
         double tOutside = 3 * t_vec[0] - 3 * t_vec[1] + t_vec[2];
         double t_diff1 = t_vec[1] - t_vec[0];
         double t_diff2 = t_vec[0] - tOutside;
-        result[0] = inv_dx * ((k_vec[0] * (t_diff1 - t_diff2)) + 
+        result[0] = inv_dx * ((k_vec[0] * (t_diff1 - t_diff2)) +
                               (k_vec[1] * t_diff1 - k_vec[0] * t_diff2));
 
         for (int i = 1; i < N - 1; i++) {
@@ -1039,11 +809,6 @@ int main() {
         if (aSource == "1") model.finitediff_artificial_source_1();
         else if (aSource == "2") model.finitediff_artificial_source_2();
         else model.runFiniteDifference();
-    }
-    else if (mode == "midpoint") {
-        if (aSource == "1") model.midpoint_artificial_source_1();
-        else if (aSource == "2") model.midpoint_artificial_source_2();
-        else model.runMidpointMethod();
     }
 
     return 0;

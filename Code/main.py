@@ -4,7 +4,7 @@ from main_package import solutionData, mergeFiles, sortFiles, processFiles, high
 
 def main():
     sType = "Exponential"
-    dType = "Continent Offset 0.050"
+    dType = "Continent Offset 0.000"
 
     # If it is the first time running the files
     preprocessing = True
@@ -31,7 +31,7 @@ def main():
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
-    # highlightSolution(fig, ax[0], sData)
+    highlightSolution(fig, ax[0], sData)
 
     sData.plot(fig, ax[0], "scatter")
     sData.plot(fig, ax[1], "scatter")
