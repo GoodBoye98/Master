@@ -65,9 +65,9 @@ class solutionFamily:
 
         if mode == 'plot':
             ax.plot(self.Q, self.T_0, label=self.name.replace('#', ''), zorder=1, color=col)
-            if self.name == "2 - IceWaterIce":
-                idx = n.argwhere(self.T_0 < -0.45)
-                ax.plot(self.Q[idx], self.T_0[idx], label='unstable region', ls=':', c='black',zorder=1)
+            # if self.name == "2 - IceWaterIce":
+            #     idx = n.argwhere(self.T_0 < -0.45)
+            #     ax.plot(self.Q[idx], self.T_0[idx], label='unstable region', ls=':', c='black',zorder=1)
         elif mode == 'scatter':
             p = ax.plot([n.nan], [n.nan], label=self.name, color=col)
             ax.scatter(self.Q, self.T_0, c=p[0].get_color(), s=1, zorder=1)

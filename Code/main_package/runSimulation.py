@@ -47,6 +47,7 @@ class runSimulation:
         self._L = 6.0
         self._s = 0.025
         self.maxT = 5
+        self.savePoints = 1000
 
         self.sim = None
         self.result = None
@@ -104,6 +105,7 @@ class runSimulation:
         # Writes parameters to file
         with open(f'{self.simDir}/simulationConfig.cfg', 'w') as f:
             f.write(f'mode {self.mode}\n')
+            f.write(f'savePoints {self.savePoints}\n')
             f.write(f'Q {self.Q}\n')
             f.write(f'C_0 {self.C_0}\n')
             f.write(f'C_1 {self.C_1}\n')
@@ -182,8 +184,8 @@ class runSimulation:
             files = [f for f in listdir(self.simDir) if isfile(join(self.simDir, f))]
             if 'result.end' in files:
                 if rows:
-                    rows = n.array(rows) % 1001
-                    skipRows = [i for i in range(1001) if i not in rows]
+                    rows = n.array(rows) % 2
+                    skipRows = [i for i in range(2) if i not in rows]
                     self.result = pd.read_csv(f'{self.simDir}\\result.sim', header=None, skiprows=skipRows).values
                 else:
                     self.result = pd.read_csv(f'{self.simDir}\\result.sim', header=None).values

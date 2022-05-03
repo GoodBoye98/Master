@@ -11,7 +11,7 @@ def main():
     # rc('text.latex', preamble=r'\usepackage{cmbright}')
 
     sType = "Gaussian"
-    dType = "Std 6"
+    dType = "Water"
 
     # If it is the first time running the files
     preprocessing = True
@@ -34,13 +34,13 @@ def main():
         # "5D - IceSnowLandWaterIce", 
         # "6 - IceWaterLandWaterIce"
         ]
-    sortFrom = 'left'
+    sortFrom = 'bot'
 
     if preprocessing:
         for family in familyNames:
-            processFiles(f"{sType}/{dType}", family)
+            # processFiles(f"{sType}/{dType}", family)
             # mergeFiles(f"{sType}/{dType}", family)
-            # sortFiles(f"{sType}/{dType}", family, sortFrom)
+            sortFiles(f"{sType}/{dType}", family, sortFrom)
 
     sData = solutionData(sType, dType)
 
@@ -49,7 +49,7 @@ def main():
 
     highlightSolution(fig, ax, sData)
 
-    sData.plot(fig, ax, "scatter")
+    sData.plot(fig, ax, "plot")
     ax.set_xlabel('Q')
     ax.set_ylabel('T(0)')
 

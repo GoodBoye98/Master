@@ -36,19 +36,17 @@ def testStability(args):
     data = n.concatenate(([data[0]], [0], [C_0], [C_1], 10 * data[1:]))
 
     k = 'u' if pert > 0 else 'd'
-    dirName = f'tempDir_stability_{k}_{str(idx):>4}'.replace(' ', '0')
+    dirName = f'simulations/tempDir_stability_{k}_{str(idx):>4}'.replace(' ', '0')
 
-    if not isdir(dirName):
-        mkdir(dirName)
-    else:
-        shutil.rmtree(dirName)
-        mkdir(dirName)
+    mkdir(dirName)
+
     simRunner = runSimulation('finitediff', data, dirName, sData.S)
 
-    simRunner.N = 2001
+    simRunner.N = 4001
     simRunner.L = 6
     simRunner.s = 0.001
     simRunner.maxT = 50
+    simRunner.savePoints = 2
     simRunner.startSimulation(perturbation=pert)
 
     while True:
@@ -58,17 +56,20 @@ def testStability(args):
     x, T_sim = simRunner.getResult()
     dx = x[1] - x[0]
     error = n.sum((simRunner.T_vals - T_sim[0, 1:]) ** 2) * dx
-    shutil.rmtree(dirName)
+
     return [idx, pert, error]
 
 
 def run():
+    if isdir('simulations'):
+        shutil.rmtree('simulations')
+    mkdir('simulations')
 
     sType = 'Gaussian'
-    dType = 'Std 6'
+    dType = 'Water'
     continentOffset = 0.0
-    C_0 = -1 + continentOffset
-    C_1 = 1 + continentOffset
+    C_0 = 0
+    C_1 = 0
 
     sData = solutionData(sType, dType)
 
@@ -92,16 +93,17 @@ def run():
         
     t_1 = time.time()
 
+    shutil.rmtree('simulations')
     print(secToString(t_1 - t_0))
 
     res = n.array(res)
-    n.save(f'{sType}-{dType}-stability-N2001.npy', res)
+    n.save(f'Stability/{sType}-{dType}-stability-N4001.npy', res)
 
 
 def plot(arg):
 
-    sType = 'Gaussian'
-    dType = 'Std 5'
+    sType = 'Exponential'
+    dType = 'Water'
 
     data = n.load(f'Stability/{sType}-{dType}-stability-N2001.npy')
 
@@ -123,7 +125,7 @@ def plot(arg):
     if arg == '+':
 
         scatter = ax.scatter(sols[idx_u, 0], sols[idx_u, 1], 
-            s=1, c=error_u, cmap='inferno', vmin=0, vmax=0.2)
+            s=1, c=error_u, cmap='rainbow', vmin=0, vmax=0.2)
         ax.set_title('Upward perturbation')
         ax.set_xlabel('Q')
         ax.set_ylabel('T(0)')
@@ -131,7 +133,7 @@ def plot(arg):
     if arg == '-':
 
         scatter = ax.scatter(sols[idx_d, 0], 
-            sols[idx_d, 1], s=1, c=error_d, cmap='inferno', vmin=0, vmax=0.2)
+            sols[idx_d, 1], s=1, c=error_d, cmap='rainbow', vmin=0, vmax=0.2)
         ax.set_title('Downward perturbation')
         ax.set_xlabel('Q')
         ax.set_ylabel('T(0)')
