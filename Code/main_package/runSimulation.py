@@ -7,9 +7,13 @@ import pandas as pd
 import scipy.integrate as integrate
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
-from Miscellaneous import randomString
 from os.path import isfile, isdir, join
 from os import listdir, remove, mkdir, rmdir, getcwd
+
+try:
+    from Miscellaneous import randomString
+except ModuleNotFoundError:
+    from main_package.Miscellaneous import randomString
 
 
 class runSimulation:
@@ -78,7 +82,7 @@ class runSimulation:
         else:
             self._s = val
 
-    def startSimulation(self):
+    def startSimulation(self, perturbation=0):
         # Starting parameters
         if self.mode == "spectral":
             self.x = n.linspace(-self.L, self.L, self._N, endpoint=False)
@@ -91,9 +95,11 @@ class runSimulation:
             dt = 3.48
             M = int(self.maxT / (dt * dx ** 2))
 
-        T = self.T(self.x)
+        T = self.T(self.x) + perturbation
         S = self.S(self.x)
         F = self._discretizedGaussian(dx)
+
+        self.T_vals = T - perturbation
 
         # Writes parameters to file
         with open(f'{self.simDir}/simulationConfig.cfg', 'w') as f:
@@ -165,17 +171,22 @@ class runSimulation:
 
             # If content is in order, return progress
             if len(s) and s[-1] == 'f':
-                return float(s[:-1]) / 10
+                return float(s.replace('f','')) / 10
             # Otherwise return False
             return False
         except FileNotFoundError as e:
             return 0
 
-    def getResultFirst(self):
+    def getResultFirst(self, rows=[]):
         if self.result is None:
             files = [f for f in listdir(self.simDir) if isfile(join(self.simDir, f))]
             if 'result.end' in files:
-                self.result = pd.read_csv(f'{self.simDir}\\result.sim', header=None).values
+                if rows:
+                    rows = n.array(rows) % 1001
+                    skipRows = [i for i in range(1001) if i not in rows]
+                    self.result = pd.read_csv(f'{self.simDir}\\result.sim', header=None, skiprows=skipRows).values
+                else:
+                    self.result = pd.read_csv(f'{self.simDir}\\result.sim', header=None).values
                 return True
             else:
                 return False
@@ -291,8 +302,6 @@ def main():
         plt.tight_layout()
 
     plt.show()
-
-
 
 
 if __name__ == "__main__":

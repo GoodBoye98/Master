@@ -1,4 +1,3 @@
-from argparse import ArgumentError
 import subprocess
 import numpy as n
 import pandas as pd
@@ -29,17 +28,12 @@ class solutionData:
             if subDir == "Water":
                 self.C_0 = 0
                 self.C_1 = 0
-            elif "Continent Offset" in subDir:
-                value = float(subDir.replace("Continent Offset ", ""))
-                self.C_0 = -1 + value
-                self.C_1 = 1 + value
-                val = 5
-            elif "Standard Deviation" in subDir:
+            elif "Std" in subDir:
                 self.C_0 = -1
                 self.C_1 = 1
-                val = float(subDir.replace("Standard Deviation ", ""))
+                val = float(subDir.replace("Std ", ""))
             self.S = f"lambda x: 4 / (n.sqrt(n.pi * {val})) * n.exp(- x * x / {val})"
-            self.S_latex = r"$S(x)=\frac{4}{\sqrt{V \pi}}e^{-\frac{x^2}{V}}$".replace('V', str(val))
+            self.S_latex = r"$S(x)=\frac{4}{\sqrt{V \pi}}e^{-\frac{x^2}{V}}$".replace('V', f"{val:.0f}")
         else:
             raise OSError(f"Directory '{mainDir}' does not exist")
 
@@ -62,12 +56,15 @@ class solutionData:
             self.families.append(sol)
 
 
-    def __call__(self, index):
+    def __call__(self, index, run=True):
         for family in self.families:
             if index < family.Q.shape[0]:
                 # Loads solution data
                 loaddir = f"{self.dir}/{family.name}.csv"
                 solution = pd.read_csv(loaddir, header=None, skiprows=index, nrows=1).values[0]
+                
+                if run is False:
+                    return n.concatenate(([solution[0]], solution[self.params.shape[0]:]))
 
                 # Saves solution data in new directory
                 solData = f'{solution[0]} {solution[1]} {self.C_0} {self.C_1} ' + ' '.join(f'{10 * v:.14f}' for v in solution[self.params.shape[0]:])
@@ -94,7 +91,28 @@ class solutionData:
             family.plot(fig, ax, mode)
         ax.legend()
 
-    
+
+    def getSol(self, index, all=False, specialFamily=None):
+        for family in self.families:
+            if specialFamily is not None:
+                if family.name == specialFamily:
+                    loaddir = f"{self.dir}/{family.name}.csv"
+                    solution = pd.read_csv(loaddir, header=None, skiprows=index, nrows=1).values[0]
+                    return solution[self.params.shape[0]:] if not all else solution
+                continue
+
+            if index < family.Q.shape[0]:
+                # Loads solution data
+                loaddir = f"{self.dir}/{family.name}.csv"
+                solution = pd.read_csv(loaddir, header=None, skiprows=index, nrows=1).values[0]
+
+                # Returns solution
+                return solution[self.params.shape[0]:] if not all else solution
+            else:
+                index -= family.Q.shape[0]
+        return None
+
+
     def getSols(self, measure='0'):
         data = []
         for family in self.families:

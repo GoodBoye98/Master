@@ -81,9 +81,9 @@ def colorStationarySolution(fig, ax, data):
     l_0, l_1 = n.argmin(n.abs(x - C_0)), n.argmin(n.abs(x - C_1))
 
     ice = n.argwhere(T[idx] < -10)[:, 0]
-    ice = ice[(ice < l_0) | (ice > l_1)]
+    ice = ice[(ice <= l_0) | (ice >= l_1)]
     water = n.argwhere(T[idx] >= -10)[:, 0]
-    water = water[(water < l_0) | (water > l_1)]
+    water = water[(water <= l_0) | (water >= l_1)]
 
     snow = n.argwhere(T[idx] < 0)[:, 0]
     snow = snow[(snow >= l_0) & (snow <= l_1)]

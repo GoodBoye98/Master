@@ -1,6 +1,30 @@
 import numpy as n
 
 
+COLORS = {
+        "1 - Ice": '#1f77b4',
+        "2 - IceWaterIce": '#ff7f0e',
+
+        "1 - IceSnowIce": '#1f77b4',
+        "2 - IceWaterSnowWaterIce": '#ff7f0e',
+        "3 - IceWaterSnowLandSnowWaterIce": '#2ca02c',
+        "3 - IceWaterLandSnowLandWaterIce": '#2ca02c',
+        "4 - IceWaterLandWaterIce": '#d62728',
+
+#       "1 - IceSnowIce": '#1f77b4',
+        "2 - IceWaterSnowIce": '#ff7f0e',
+        "3 - IceWaterSnowWaterIce": '#8c564b',
+        "4 - IceWaterSnowLandSnowWaterIce": '#2ca02c',
+        "4B - IceWaterSnowLandSnowIce": '#e377c2',
+        "5A - IceWaterLandSnowWaterIce": '#7f7f7f',
+        "5B - IceWaterSnowLandWaterIce": '#17becf',
+        "5C - IceWaterLandSnowIce": '#bcbd22',
+        "5D - IceSnowLandWaterIce": '#bcbd22',
+        "6 - IceWaterLandWaterIce": '#d62728'
+}
+
+
+
 class solutionFamily:
     def __init__(self, data, name, params):
         """
@@ -33,8 +57,17 @@ class solutionFamily:
         if measure.lower() in ['t_c', 'center', 'centre', 't_center', 't_centre']:
             return n.column_stack([self.Q, self.T_c])
 
-    def plot(self, fig, ax, mode='plot'):
+    def plot(self, fig, ax, mode='plot', specialCase=None):
+        try:
+            col = COLORS[self.name.replace('#', '')]
+        except KeyError:
+            col = 'red'
+
         if mode == 'plot':
-            ax.plot(self.Q, self.T_0, label=self.name)
+            ax.plot(self.Q, self.T_0, label=self.name.replace('#', ''), zorder=1, color=col)
+            if self.name == "2 - IceWaterIce":
+                idx = n.argwhere(self.T_0 < -0.45)
+                ax.plot(self.Q[idx], self.T_0[idx], label='unstable region', ls=':', c='black',zorder=1)
         elif mode == 'scatter':
-            ax.scatter(self.Q, self.T_0, label=self.name, s=1)
+            p = ax.plot([n.nan], [n.nan], label=self.name, color=col)
+            ax.scatter(self.Q, self.T_0, c=p[0].get_color(), s=1, zorder=1)
