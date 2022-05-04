@@ -65,10 +65,10 @@ def run():
         shutil.rmtree('simulations')
     mkdir('simulations')
 
-    sType = 'Gaussian'
-    dType = 'Std 5'
-    C_0 = -1
-    C_1 = 1
+    sType = 'Exponential'
+    dType = 'Continent Offset 0.050'
+    C_0 = -1 + 0.050
+    C_1 = 1 + 0.050
 
     sData = solutionData(sType, dType)
 
@@ -85,7 +85,7 @@ def run():
 
     res = []
 
-    with Pool(16) as p:
+    with Pool(12) as p:
         for x in tqdm(p.imap_unordered(testStability, args), total=idx.shape[0] * 2):
             res.append(x)
 
@@ -102,7 +102,7 @@ def run():
 def plot():
 
     sType = 'Exponential'
-    dType = 'Continent Offset 0.000'
+    dType = 'Continent Offset 0.050'
 
     data = n.load(f'Stability/{sType}-{dType}-stability-N4001.npy')
 
@@ -143,5 +143,5 @@ def plot():
 
 
 if __name__ == '__main__':
-    # run()
-    plot()
+    run()
+    # plot()
