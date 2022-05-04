@@ -16,6 +16,7 @@ class EBalanceModel {
 public:
     // Initialization with default values
 
+
     EBalanceModel() {
         // Albedos
         a_0 = 0.6;

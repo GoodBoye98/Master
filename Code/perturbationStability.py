@@ -66,16 +66,14 @@ def run():
     mkdir('simulations')
 
     sType = 'Gaussian'
-    dType = 'Water'
-    continentOffset = 0.0
-    C_0 = 0
-    C_1 = 0
+    dType = 'Std 5'
+    C_0 = -1
+    C_1 = 1
 
     sData = solutionData(sType, dType)
 
     sols = sData.getSols()
     idx = n.arange(0, sols.shape[0], dtype=int)
-    print(f'Max index : {idx[-1]}')
 
     args = []
     for i in idx:
@@ -90,22 +88,23 @@ def run():
     with Pool(16) as p:
         for x in tqdm(p.imap_unordered(testStability, args), total=idx.shape[0] * 2):
             res.append(x)
-        
-    t_1 = time.time()
-
-    shutil.rmtree('simulations')
-    print(secToString(t_1 - t_0))
 
     res = n.array(res)
     n.save(f'Stability/{sType}-{dType}-stability-N4001.npy', res)
 
+    shutil.rmtree('simulations')
+        
+    t_1 = time.time()
 
-def plot(arg):
+    print(secToString(t_1 - t_0))
+
+
+def plot():
 
     sType = 'Exponential'
-    dType = 'Water'
+    dType = 'Continent Offset 0.000'
 
-    data = n.load(f'Stability/{sType}-{dType}-stability-N2001.npy')
+    data = n.load(f'Stability/{sType}-{dType}-stability-N4001.npy')
 
     sData = solutionData(sType, dType)
     sols = sData.getSols()
@@ -120,25 +119,24 @@ def plot(arg):
     error_u = error[pert > 0]
     error_d = error[pert < 0]
 
-    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    fig, ax = plt.subplots(2, 1, figsize=(6, 8))
 
-    if arg == '+':
+    scatter_0 = ax[0].scatter(sols[idx_u, 0], sols[idx_u, 1], 
+        s=1, c=error_u, cmap='rainbow', vmin=0, vmax=0.2)
+    ax[0].set_title('Upward perturbation')
+    ax[0].set_xlabel('Q')
+    ax[0].set_ylabel('T(0)')
 
-        scatter = ax.scatter(sols[idx_u, 0], sols[idx_u, 1], 
-            s=1, c=error_u, cmap='rainbow', vmin=0, vmax=0.2)
-        ax.set_title('Upward perturbation')
-        ax.set_xlabel('Q')
-        ax.set_ylabel('T(0)')
-    
-    if arg == '-':
+    bar = fig.colorbar(scatter_0, ax=ax[0])
+    bar.ax.set_title('Error')
 
-        scatter = ax.scatter(sols[idx_d, 0], 
-            sols[idx_d, 1], s=1, c=error_d, cmap='rainbow', vmin=0, vmax=0.2)
-        ax.set_title('Downward perturbation')
-        ax.set_xlabel('Q')
-        ax.set_ylabel('T(0)')
+    scatter_1 = ax[1].scatter(sols[idx_d, 0], 
+        sols[idx_d, 1], s=1, c=error_d, cmap='rainbow', vmin=0, vmax=0.2)
+    ax[1].set_title('Downward perturbation')
+    ax[1].set_xlabel('Q')
+    ax[1].set_ylabel('T(0)')
 
-    bar = fig.colorbar(scatter)
+    bar = fig.colorbar(scatter_1, ax=ax[1])
     bar.ax.set_title('Error')
     plt.tight_layout()
     plt.show()
@@ -146,5 +144,4 @@ def plot(arg):
 
 if __name__ == '__main__':
     # run()
-    plot('+')
-    plot('-')
+    plot()
