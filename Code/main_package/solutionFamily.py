@@ -15,11 +15,13 @@ COLORS = {
         "2 - IceWaterSnowIce": '#ff7f0e',
         "3 - IceWaterSnowWaterIce": '#8c564b',
         "4 - IceWaterSnowLandSnowWaterIce": '#2ca02c',
+        "3A - IceWater_Land_WaterIce": '#2ca02c',
+        "3B - IceWater_Snow_WaterIce": '#9467bd',
         "4B - IceWaterSnowLandSnowIce": '#e377c2',
         "5A - IceWaterLandSnowWaterIce": '#7f7f7f',
         "5B - IceWaterSnowLandWaterIce": '#17becf',
         "5C - IceWaterLandSnowIce": '#bcbd22',
-        "5D - IceSnowLandWaterIce": '#bcbd22',
+        "5D - IceSnowLandWaterIce": '#e377c2',
         "6 - IceWaterLandWaterIce": '#d62728'
 }
 
@@ -31,6 +33,7 @@ class solutionFamily:
         Helper class for a single solution in a family.
         """
         self.Q = self.T_0 = self.T_c = self.T_m = None
+        # self.name = name if name != "6 - IceWaterLandWaterIce" else "4 - IceWaterLandWaterIce"  # Cause I'm stupid and fked the indexing of the stability simulation
         self.name = name
         for i, par in enumerate(params):
             if par == 'Q':
@@ -57,17 +60,14 @@ class solutionFamily:
         if measure.lower() in ['t_c', 'center', 'centre', 't_center', 't_centre']:
             return n.column_stack([self.Q, self.T_c])
 
-    def plot(self, fig, ax, mode='plot', specialCase=None):
+    def plot(self, fig, ax, mode='plot', **kwargs):
         try:
             col = COLORS[self.name.replace('#', '')]
         except KeyError:
             col = 'red'
 
         if mode == 'plot':
-            ax.plot(self.Q, self.T_0, label=self.name.replace('#', ''), zorder=1, color=col)
-            # if self.name == "2 - IceWaterIce":
-            #     idx = n.argwhere(self.T_0 < -0.45)
-            #     ax.plot(self.Q[idx], self.T_0[idx], label='unstable region', ls=':', c='black',zorder=1)
+            ax.plot(self.Q, self.T_0, label=self.name.replace('#', ''), zorder=1, color=col, **kwargs)
         elif mode == 'scatter':
-            p = ax.plot([n.nan], [n.nan], label=self.name, color=col)
-            ax.scatter(self.Q, self.T_0, c=p[0].get_color(), s=1, zorder=1)
+            p = ax.plot([n.nan], [n.nan], label=self.name, color=col, **kwargs)
+            ax.scatter(self.Q, self.T_0, c=p[0].get_color(), s=1, zorder=1, **kwargs)

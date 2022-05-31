@@ -66,9 +66,9 @@ def run():
     mkdir('simulations')
 
     sType = 'Exponential'
-    dType = 'Continent Offset 0.050'
-    C_0 = -1 + 0.050
-    C_1 = 1 + 0.050
+    dType = 'Continent Offset 0.005'
+    C_0 = -1 + 0.005    # Left continental edge
+    C_1 = 1 + 0.005     # Right continental edge
 
     sData = solutionData(sType, dType)
 
@@ -81,28 +81,30 @@ def run():
         args.append([i, sType, dType, C_0, C_1, -0.1])
 
 
-    t_0 = time.time()
+    t_0 = time.time()  # Record time
 
+    # Run stability-test using multiple processes
     res = []
-
     with Pool(12) as p:
         for x in tqdm(p.imap_unordered(testStability, args), total=idx.shape[0] * 2):
             res.append(x)
 
+    # Save result
     res = n.array(res)
     n.save(f'Stability/{sType}-{dType}-stability-N4001.npy', res)
 
+    # Delete leftover data
     shutil.rmtree('simulations')
         
-    t_1 = time.time()
+    t_1 = time.time()  # Record time
 
-    print(secToString(t_1 - t_0))
+    print(secToString(t_1 - t_0))  # Print total time
 
 
 def plot():
 
     sType = 'Exponential'
-    dType = 'Continent Offset 0.050'
+    dType = 'Continent Offset 0.000'
 
     data = n.load(f'Stability/{sType}-{dType}-stability-N4001.npy')
 

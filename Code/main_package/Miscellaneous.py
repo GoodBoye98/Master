@@ -42,7 +42,7 @@ def mergeFiles(dir, base_name):
         f.write(allString)
     
     
-    print(f"Sucessfully merged files {correctFiles} into '{base_name}.csv' and removed lefovers.")
+    print(f"Sucessfully merged files {correctFiles} into '{base_name}.csv'")
 
 
 def sortFiles(dir, base_name, how='bot', usecols=[0, 1]):
@@ -97,6 +97,22 @@ def sortFiles(dir, base_name, how='bot', usecols=[0, 1]):
         n.savetxt(f"{dir}/{file}", dataFull[idxSorted], delimiter=",", fmt='%.14f')
 
         print(f"{file} has been sorted according to '{how}'.")
+
+
+def invertFiles(dir, base_name):
+    files = [f for f in listdir(dir) if isfile(join(dir, f))]
+    correctFiles = [f for f in files if base_name in f]
+
+    for file in correctFiles:
+        data = pd.read_csv(f"{dir}/{file}", header=None, delimiter=',').values
+        data = data[::-1]
+
+        n.savetxt(f"{dir}/{file}", data, delimiter=",", fmt='%.14f')
+
+    if len(correctFiles):
+        print(f"Sucessfully inverted file {base_name}.")
+    else:
+        print(f"No file matching {dir}/{base_name} found.")
 
 
 def randomString(length=10):

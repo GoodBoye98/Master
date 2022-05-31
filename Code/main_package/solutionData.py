@@ -85,10 +85,10 @@ class solutionData:
                 index -= family.Q.shape[0]
 
 
-    def plot(self, fig, ax, mode='plot'):
+    def plot(self, fig, ax, mode='plot', **kwargs):
         fig.suptitle(f"Bifurcation diagram\n{self.S_latex}")
         for family in self.families:
-            family.plot(fig, ax, mode)
+            family.plot(fig, ax, mode, **kwargs)
         ax.legend()
 
 
@@ -119,6 +119,10 @@ class solutionData:
             data.append(family.getSols(measure))
         return n.vstack(data)
 
+    def getSolutionFamily(self, name):
+        for family in self.families:
+            if family.name == name:
+                return family.getSols()
 
     def getSolutionName(self, index):
         for family in self.families:
