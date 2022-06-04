@@ -9,6 +9,7 @@ These folders are to be placed in the "Code" folder. In the same directory as th
 In the Code folder there are a bunch of example scripts, they were used to plot various figures in the thesis.
 To plot bifurcation and run the finite difference or spectral numerical schemes, run "main.py" from its own directory
 In "main.py", change sType and dType to plot the different bifurcation diagrams, the possible combinations are
+
 sType = "Exponential"
   - dType = "Water"
   - dType = "Continential Offset 0.000"
@@ -29,4 +30,4 @@ sType = "Gaussian"
 
 dType = "Water" corresponds to the line without a continent, "Std 5" is the narrower gaussian and "Std 6" is the wider gaussian.
 
-To plot a solution from the bifurcation diagram and run the numerical schemes for a perturbation, simply right click on a solution, this should open up a GUI for running the schemes. In order to do that it is requiered to compile the c++ code in "Code/main_package/C++/numerics.cpp", which depends upon the library Eigen 3.4.0 (https://eigen.tuxfamily.org/index.php?title=Main_Page)
+To plot a solution from the bifurcation diagram and run the numerical schemes for a perturbation, simply right click on a solution, this should open up a GUI for running the schemes. To do that, it is requiered to compile the c++ code in "Code/main_package/C++/numerics.cpp", which depends upon the library Eigen 3.4.0 (https://eigen.tuxfamily.org/index.php?title=Main_Page). The GUI gives the oppurtunity to change N, L, s, the perturbation and what t values to plot from the simulations.
