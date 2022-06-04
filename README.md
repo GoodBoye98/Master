@@ -4,7 +4,7 @@ Code written for master thesis "An Energy Balance Mode on an Infinite Line" (onl
 To run the different programs you need to download data first.
 For the Laplacian case, download the folder "Exponential" from shorturl.at/jloA7
 For the Gaussian case, download the folder "Gaussian" from shorturl.at/oxFN6
-These folders are to be placed in the "Code" folder. In the same directory as the "main.py" file
+These folders are to be placed in the "Code" folder. In the same directory as the "main.py" file, unzipped.
 
 In the Code folder there are a bunch of example scripts, they were used to plot various figures in the thesis.
 To plot bifurcation and run the finite difference or spectral numerical schemes, run "main.py" from its own directory
